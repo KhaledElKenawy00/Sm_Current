@@ -68,7 +68,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           "LOGIN",
                           style: TextStyle(color: primaryColor, fontSize: 40),
                         ),
-                        Image.asset("assets/login.png"),
+                        Image.asset(
+                          "assets/back.png",
+                          height: 400,
+                        ),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 5),
                           child: InputField(
@@ -85,17 +88,20 @@ class _LoginScreenState extends State<LoginScreen> {
                               passwordInvisible: true),
                         ),
 
-                        ListTile(
-                          horizontalTitleGap: 2,
-                          title: const Text("Remember me"),
-                          leading: Checkbox(
-                            activeColor: primaryColor,
-                            value: isChecked,
-                            onChanged: (value) {
-                              setState(() {
-                                isChecked = !isChecked;
-                              });
-                            },
+                        Padding(
+                          padding: const EdgeInsets.only(left: 50.0),
+                          child: ListTile(
+                            horizontalTitleGap: 2,
+                            title: const Text("Remember me"),
+                            leading: Checkbox(
+                              activeColor: primaryColor,
+                              value: isChecked,
+                              onChanged: (value) {
+                                setState(() {
+                                  isChecked = !isChecked;
+                                });
+                              },
+                            ),
                           ),
                         ),
 
@@ -116,15 +122,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-                Expanded(
-                  child: Card(
-                    color: Colors.white,
-                    child: Image.asset(
-                      "assets/electric_signal.png",
-                      height: MediaQuery.of(context).size.height,
-                    ),
-                  ),
-                ),
+                // Expanded(
+                //   child: Card(
+                //     color: Colors.white,
+                //     child: Image.asset(
+                //       "assets/electric_signal.png",
+                //       height: MediaQuery.of(context).size.height,
+                //     ),
+                //   ),
+                // ),
               ],
             ),
           ),
