@@ -37,6 +37,10 @@ dependencies:
   cupertino_icons: ^1.0.2
   path: ^1.8.3
   sqflite_common_ffi: ^2.3.5
+  serial_port_win32: ^2.2.0
+  intl: ^0.20.2
+  provider: ^6.1.5
+  fl_chart: ^1.0.0
 
 
 dev_dependencies:
