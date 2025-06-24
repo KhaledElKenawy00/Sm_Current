@@ -9,104 +9,105 @@ class FullDataPage extends StatefulWidget {
 }
 
 class _FullDataPageState extends State<FullDataPage> {
-  final DatabaseService _dbService = DatabaseService();
-  List<Map<String, dynamic>> _sessions = [];
-  Map<int, List<Map<String, dynamic>>> _readingsMap = {}; // مفتاحه session_id
-  bool _isLoading = true;
+  late Future<List<Map<String, dynamic>>> _dataFuture;
 
   @override
   void initState() {
     super.initState();
-    _loadAllData();
+    _dataFuture = _loadAllData();
   }
 
-  Future<void> _loadAllData() async {
-    final sessions = await _dbService.getAllSessions();
+  Future<List<Map<String, dynamic>>> _loadAllData() async {
+    final dbService = DatabaseService();
+    return await dbService.getAllReadings();
+  }
 
-    final readingsMap = <int, List<Map<String, dynamic>>>{};
-    for (final session in sessions) {
-      final readings =
-          await _dbService.getReadingsForSession(session['id'] as int);
-      readingsMap[session['id'] as int] = readings;
-    }
+  Widget _buildReadingCard(Map<String, dynamic> reading) {
+    final String device = reading['device'] ?? 'Unknown';
+    final Color color = device == 'STM1' ? Colors.green : Colors.blue;
 
-    setState(() {
-      _sessions = sessions;
-      _readingsMap = readingsMap;
-      _isLoading = false;
-    });
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "⏰ Time: ${reading['timestamp']}",
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text("💻 Device: $device", style: TextStyle(color: color)),
+          const SizedBox(height: 4),
+          Text(reading['json_data']),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("📂 All Stored Data")),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _sessions.isEmpty
-              ? const Center(child: Text("No stored sessions yet."))
-              : ListView.builder(
-                  itemCount: _sessions.length,
-                  itemBuilder: (context, index) {
-                    final session = _sessions[index];
-                    final sessionId = session['id'] as int;
-                    final sessionDate = session['session_date'] as String;
-                    final readings = _readingsMap[sessionId] ?? [];
+      appBar: AppBar(
+        title: const Text("📂 All Stored Data"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              setState(() {
+                _dataFuture = _loadAllData();
+              });
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Container(
+            color: Colors.amber.withOpacity(0.2),
+            padding: const EdgeInsets.all(8),
+            child: const Text(
+              "📦 These are stored readings. STM32 connection is not required.",
+              style: TextStyle(fontSize: 14),
+            ),
+          ),
+          Expanded(
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _dataFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "📅 Session Date: $sessionDate",
-                              style: const TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(height: 8),
-                            readings.isEmpty
-                                ? const Text("No readings for this session.")
-                                : ListView.builder(
-                                    shrinkWrap: true,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    itemCount: readings.length,
-                                    itemBuilder: (context, readingIndex) {
-                                      final reading = readings[readingIndex];
-                                      return Container(
-                                        margin: const EdgeInsets.symmetric(
-                                            vertical: 4),
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue.shade50,
-                                          borderRadius:
-                                              BorderRadius.circular(8),
-                                        ),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              "⏰ Time: ${reading['timestamp']}",
-                                              style: const TextStyle(
-                                                  fontWeight: FontWeight.bold),
-                                            ),
-                                            const SizedBox(height: 4),
-                                            Text(reading['json_data']),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
-                          ],
-                        ),
-                      ),
-                    );
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text("❌ Error loading data: ${snapshot.error}"),
+                  );
+                }
+
+                final readings = snapshot.data ?? [];
+
+                if (readings.isEmpty) {
+                  return const Center(child: Text("No readings available."));
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(8),
+                  itemCount: readings.length,
+                  itemBuilder: (context, index) {
+                    return _buildReadingCard(readings[index]);
                   },
-                ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

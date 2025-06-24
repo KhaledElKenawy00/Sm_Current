@@ -4,77 +4,58 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class DatabaseService {
   Database? _db;
+  bool _isInitializing = false;
 
+  /// Initialize the database with a single table for all STM32 readings.
   Future<void> initDB() async {
+    if (_db != null) return;
+    if (_isInitializing) {
+      while (_db == null) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+      return;
+    }
+
+    _isInitializing = true;
+
     final dbPath = await getDatabasesPath();
     _db = await openDatabase(
       join(dbPath, 'stm32_data.db'),
       version: 1,
       onCreate: (db, version) async {
         await db.execute('''
-          CREATE TABLE sessions(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            session_date TEXT
-          )
-        ''');
-
-        await db.execute('''
           CREATE TABLE readings(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            session_id INTEGER,
             timestamp TEXT,
-            json_data TEXT,
-            FOREIGN KEY(session_id) REFERENCES sessions(id)
+            device TEXT,
+            json_data TEXT
           )
         ''');
       },
     );
+
+    _isInitializing = false;
   }
 
-  Future<int> _getOrCreateSession() async {
+  /// Insert reading from any STM32 device into unified table.
+  Future<void> insertReadingUnified(
+      Map<String, dynamic> jsonMap, String device) async {
     if (_db == null) await initDB();
 
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final result = await _db!.query(
-      'sessions',
-      where: 'session_date = ?',
-      whereArgs: [today],
-      limit: 1,
-    );
-
-    if (result.isNotEmpty) {
-      return result.first['id'] as int;
-    } else {
-      return await _db!.insert('sessions', {'session_date': today});
-    }
-  }
-
-  Future<void> insertData(Map<String, dynamic> jsonMap) async {
-    if (_db == null) await initDB();
-
-    final sessionId = await _getOrCreateSession();
     final now = DateFormat('HH:mm:ss').format(DateTime.now());
 
-    await _db!.insert('readings', {
-      'session_id': sessionId,
-      'timestamp': now,
-      'json_data': jsonMap.toString(),
+    await _db!.transaction((txn) async {
+      await txn.insert('readings', {
+        'timestamp': now,
+        'device': device,
+        'json_data': jsonMap.toString(),
+      });
     });
   }
 
-  Future<List<Map<String, dynamic>>> getAllSessions() async {
+  /// Fetch all stored readings sorted by latest first.
+  Future<List<Map<String, dynamic>>> getAllReadings() async {
     if (_db == null) await initDB();
-    return await _db!.query('sessions', orderBy: 'id DESC');
-  }
-
-  Future<List<Map<String, dynamic>>> getReadingsForSession(
-      int sessionId) async {
-    if (_db == null) await initDB();
-    return await _db!.query(
-      'readings',
-      where: 'session_id = ?',
-      whereArgs: [sessionId],
-      orderBy: 'id ASC',
-    );
+    return await _db!.query('readings', orderBy: 'id DESC');
   }
 }

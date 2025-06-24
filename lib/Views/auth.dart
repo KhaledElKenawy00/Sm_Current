@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_sqlite_auth_app/Components/button.dart';
 import 'package:flutter_sqlite_auth_app/Components/colors.dart';
+import 'package:flutter_sqlite_auth_app/Views/historey_data.dart';
 import 'package:flutter_sqlite_auth_app/Views/login.dart';
 
 class AuthScreen extends StatelessWidget {
@@ -36,6 +37,14 @@ class AuthScreen extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                             builder: (context) => const LoginScreen()));
+                  }),
+              Button(
+                  label: "DataBase Historey",
+                  press: () {
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const FullDataPage()));
                   }),
               // Button(label: "SIGN UP", press: () {
               //   Navigator.push(context, MaterialPageRoute(builder: (context)=> const SignupScreen()));

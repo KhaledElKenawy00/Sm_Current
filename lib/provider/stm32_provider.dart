@@ -7,15 +7,96 @@ import 'package:serial_port_win32/serial_port_win32.dart';
 
 class STM32Provider with ChangeNotifier {
   SerialPort? _port;
+  SerialPort? _secondPort;
+  Timer? _pollingTimer;
+  Timer? _secondPollingTimer;
+
   List<double> signalHistory = [];
   final int maxPoints = 100;
+  int signalValue = 0;
 
-  Timer? _pollingTimer;
   String latestData = 'Waiting for data...';
+  String latestDataSTM2 = 'Waiting for STM32 2 data...';
+
   final List<String> logs = [];
   final DatabaseService _dbService = DatabaseService();
   String _buffer = '';
-  int signalValue = 0;
+
+  void _processSTMBuffer(String data, String device) async {
+    final jsonRegex = RegExp(r'\{[^}]*\}');
+
+    for (final match in jsonRegex.allMatches(data)) {
+      final jsonString = match.group(0);
+      if (jsonString != null) {
+        if (device == 'STM1') {
+          latestData = jsonString;
+        } else {
+          latestDataSTM2 = jsonString;
+        }
+
+        logs.insert(0, "$device: $jsonString");
+        if (logs.length > 100) logs.removeLast();
+        notifyListeners();
+
+        try {
+          final jsonMap = jsonDecode(jsonString);
+          if (jsonMap is Map<String, dynamic>) {
+            if (device == 'STM1') {
+              signalValue = jsonMap['Signal_Value'] ?? 0;
+              signalHistory.add(signalValue.toDouble());
+              if (signalHistory.length > maxPoints) {
+                signalHistory.removeAt(0);
+              }
+              notifyListeners();
+            }
+
+            await _dbService.insertReadingUnified(jsonMap, device);
+            print("✅ Stored $device Data: $jsonMap");
+          }
+        } catch (e) {
+          print("⚠️ JSON parse error for $device: $e");
+        }
+      }
+    }
+  }
+
+  void startSecondSTM32() {
+    final ports = SerialPort.getAvailablePorts();
+    if (ports.length < 2) {
+      print("❌ Less than 2 ports available. Cannot start second STM32.");
+      return;
+    }
+
+    _secondPort = SerialPort(ports[1])
+      ..BaudRate = 115200
+      ..StopBits = 2
+      ..ByteSize = 8
+      ..Parity = 0;
+
+    if (!_secondPort!.isOpened) {
+      _secondPort!.open();
+      if (_secondPort!.isOpened) {
+        print("✅ Second port opened: ${_secondPort!.portName}");
+      } else {
+        print("❌ Failed to open second port: ${_secondPort!.portName}");
+        return;
+      }
+    }
+
+    _secondPollingTimer =
+        Timer.periodic(const Duration(milliseconds: 10), (timer) async {
+      try {
+        Uint8List data = await _secondPort!
+            .readBytes(1024, timeout: const Duration(milliseconds: 1));
+        if (data.isNotEmpty) {
+          final decoded = utf8.decode(data, allowMalformed: true);
+          _processSTMBuffer(decoded, 'STM2');
+        }
+      } catch (e) {
+        print("❌ STM2 Read Error: $e");
+      }
+    });
+  }
 
   void startListening() {
     final ports = SerialPort.getAvailablePorts();
@@ -24,33 +105,31 @@ class STM32Provider with ChangeNotifier {
       return;
     }
 
-    final port = SerialPort(ports.first)
-      ..BaudRate = 9600
+    _port = SerialPort(ports.first)
+      ..BaudRate = 115200
       ..StopBits = 2
       ..ByteSize = 8
       ..Parity = 0;
 
-    if (!port.isOpened) {
-      port.open();
-      if (port.isOpened) {
-        print("✅ Port opened: ${port.portName}");
+    if (!_port!.isOpened) {
+      _port!.open();
+      if (_port!.isOpened) {
+        print("✅ Port opened: ${_port!.portName}");
       } else {
-        print("❌ Failed to open port: ${port.portName}");
+        print("❌ Failed to open port: ${_port!.portName}");
         return;
       }
     }
 
-    _port = port;
-
     _pollingTimer =
-        Timer.periodic(const Duration(milliseconds: 1), (timer) async {
+        Timer.periodic(const Duration(milliseconds: 10), (timer) async {
       try {
-        Uint8List data = await port.readBytes(1024,
-            timeout: const Duration(milliseconds: 1));
+        Uint8List data = await _port!
+            .readBytes(1024, timeout: const Duration(milliseconds: 1));
         if (data.isNotEmpty) {
           final decoded = utf8.decode(data, allowMalformed: true);
           _buffer += decoded;
-          _processBuffer();
+          _processMainBuffer();
         }
       } catch (e) {
         print("❌ Read error: $e");
@@ -58,18 +137,18 @@ class STM32Provider with ChangeNotifier {
     });
   }
 
-  void _processBuffer() {
+  void _processMainBuffer() {
     final jsonRegex = RegExp(r'\{[^}]*\}');
 
     for (final match in jsonRegex.allMatches(_buffer)) {
       final jsonString = match.group(0);
       if (jsonString != null) {
         latestData = jsonString;
-        logs.insert(0, jsonString);
+        logs.insert(0, "STM1: $jsonString");
         if (logs.length > 100) logs.removeLast();
         notifyListeners();
 
-        _tryParseJson(jsonString);
+        _processSTMBuffer(jsonString, "STM1");
       }
     }
 
@@ -79,28 +158,12 @@ class STM32Provider with ChangeNotifier {
     }
   }
 
-  void _tryParseJson(String line) {
-    try {
-      final jsonMap = jsonDecode(line);
-      if (jsonMap is Map<String, dynamic>) {
-        signalValue = jsonMap['Signal_Value'] ?? 0;
-
-        signalHistory.add(signalValue.toDouble());
-        if (signalHistory.length > maxPoints) {
-          signalHistory.removeAt(0);
-        }
-
-        notifyListeners();
-      }
-    } catch (e) {
-      print("⚠️ JSON parse error: $e");
-    }
-  }
-
   @override
   void dispose() {
     _pollingTimer?.cancel();
+    _secondPollingTimer?.cancel();
     _port?.close();
+    _secondPort?.close();
     super.dispose();
   }
 }
