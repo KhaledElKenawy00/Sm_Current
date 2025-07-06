@@ -10,7 +10,9 @@ class STM32Provider with ChangeNotifier {
   SerialPort? _secondPort;
   Timer? _pollingTimer;
   Timer? _secondPollingTimer;
-
+  List<double> emg1History = [];
+  List<double> emg2History = [];
+  List<double> emg3History = [];
   List<double> signalHistory = [];
   final int maxPoints = 100;
   int signalValue = 0;
@@ -36,20 +38,31 @@ class STM32Provider with ChangeNotifier {
 
         logs.insert(0, "$device: $jsonString");
         if (logs.length > 100) logs.removeLast();
-        notifyListeners();
 
         try {
           final jsonMap = jsonDecode(jsonString);
           if (jsonMap is Map<String, dynamic>) {
-            if (device == 'STM1') {
-              signalValue = jsonMap['Signal_Value'] ?? 0;
-              signalHistory.add(signalValue.toDouble());
-              if (signalHistory.length > maxPoints) {
-                signalHistory.removeAt(0);
-              }
-              notifyListeners();
-            }
+            /// معالجة EMG
+            final emg1 = (jsonMap['EMG1'] ?? 0).toDouble();
+            final emg2 = (jsonMap['EMG2'] ?? 0).toDouble();
+            final emg3 = (jsonMap['EMG3'] ?? 0).toDouble();
 
+            emg1History.add(emg1);
+            emg2History.add(emg2);
+            emg3History.add(emg3);
+
+            if (emg1History.length > maxPoints) emg1History.removeAt(0);
+            if (emg2History.length > maxPoints) emg2History.removeAt(0);
+            if (emg3History.length > maxPoints) emg3History.removeAt(0);
+
+            /// معالجة Signal Value
+            signalValue = jsonMap['Signal_Value'] ?? 0;
+            signalHistory.add(signalValue.toDouble());
+            if (signalHistory.length > maxPoints) signalHistory.removeAt(0);
+
+            notifyListeners();
+
+            /// تخزين في قاعدة البيانات
             await _dbService.insertReadingUnified(jsonMap, device);
             print("✅ Stored $device Data: $jsonMap");
           }

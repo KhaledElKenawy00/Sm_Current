@@ -3,8 +3,7 @@ import 'package:flutter_sqlite_auth_app/Components/button.dart';
 import 'package:flutter_sqlite_auth_app/Components/colors.dart';
 import 'package:flutter_sqlite_auth_app/Components/textfield.dart';
 import 'package:flutter_sqlite_auth_app/JSON/users.dart';
-import 'package:flutter_sqlite_auth_app/Views/profile.dart';
-
+import 'package:flutter_sqlite_auth_app/Views/data_screen.dart';
 import '../SQLite/database_helper.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -33,10 +32,8 @@ class _LoginScreenState extends State<LoginScreen> {
     if (res == true) {
       //If result is correct then go to profile or home
       if (!mounted) return;
-      Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => Profile(profile: usrDetails)));
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (context) => DataPage()));
     } else {
       //Otherwise show the error message
       setState(() {
