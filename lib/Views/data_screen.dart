@@ -42,15 +42,6 @@ class DataPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.blue.shade50,
       appBar: AppBar(
-        leading: IconButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const FullDataPage()),
-            );
-          },
-          icon: const Icon(Icons.shape_line_outlined),
-        ),
         title: const Text('STM32 Real-time Viewer'),
         centerTitle: true,
         backgroundColor: Colors.blue.shade100,
