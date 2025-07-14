@@ -14,7 +14,9 @@ class STM32Provider with ChangeNotifier {
   List<double> emg1History = [];
   List<double> emg2History = [];
   List<double> emg3History = [];
-  List<double> signalHistory = [];
+  List<double> signalHistorySTM1 = [];
+  List<double> signalHistorySTM2 = [];
+
   final int maxPoints = 100;
   int signalValue = 0;
 
@@ -42,6 +44,7 @@ class STM32Provider with ChangeNotifier {
 
             if (device == 'STM1') {
               latestData = jsonString;
+
               final emg1 = (jsonMap['EMG1'] ?? 0).toDouble();
               final emg2 = (jsonMap['EMG2'] ?? 0).toDouble();
               final emg3 = (jsonMap['EMG3'] ?? 0).toDouble();
@@ -57,17 +60,27 @@ class STM32Provider with ChangeNotifier {
               latestDataSTM2 = jsonString;
             }
 
-            // signal موجود في الجهازين
-            signalValue = jsonMap['Signal_Value'] ?? 0;
-            signalHistory.add(signalValue.toDouble());
-            if (signalHistory.length > maxPoints) signalHistory.removeAt(0);
+            if (jsonMap.containsKey('Signal_Value')) {
+              signalValue = jsonMap['Signal_Value'] ?? 0;
+
+              if (device == 'STM1') {
+                signalHistorySTM1.add(signalValue.toDouble());
+                if (signalHistorySTM1.length > maxPoints) {
+                  signalHistorySTM1.removeAt(0);
+                }
+              } else {
+                signalHistorySTM2.add(signalValue.toDouble());
+                if (signalHistorySTM2.length > maxPoints) {
+                  signalHistorySTM2.removeAt(0);
+                }
+              }
+            }
 
             logs.insert(0, "$device: $jsonString");
             if (logs.length > 100) logs.removeLast();
 
             notifyListeners();
 
-            // تخزين في جدول الجهاز المناسب
             if (device == 'STM1') {
               await _dbService.insertReadingSTM1(jsonMap);
             } else {

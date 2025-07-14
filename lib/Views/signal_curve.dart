@@ -6,10 +6,9 @@ import 'package:fl_chart/fl_chart.dart';
 class SignalPage extends StatelessWidget {
   const SignalPage({super.key});
 
-  static const double displayWindow = 100; // كم نقطة نعرض على الشاشة
+  static const double displayWindow = 100;
 
   Widget _buildChart(List<double> data, Color color, String label) {
-    // نحدد عدد النقاط المعروضة في النهاية فقط
     final displayData = data.length > displayWindow
         ? data.sublist(data.length - displayWindow.toInt())
         : data;
@@ -99,7 +98,8 @@ class SignalPage extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _buildChart(stmProvider.signalHistory, Colors.blue, "Signal"),
+            _buildChart(
+                stmProvider.signalHistorySTM2, Colors.purple, "Signal STM2"),
             _buildChart(stmProvider.emg1History, Colors.red, "EMG 1"),
             _buildChart(stmProvider.emg2History, Colors.green, "EMG 2"),
             _buildChart(stmProvider.emg3History, Colors.orange, "EMG 3"),
