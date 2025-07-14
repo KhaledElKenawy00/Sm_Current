@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_sqlite_auth_app/Views/historey_data.dart';
 import 'package:flutter_sqlite_auth_app/Views/signal_curve.dart';
 import 'package:flutter_sqlite_auth_app/provider/stm32_provider.dart';
 import 'package:provider/provider.dart';
@@ -12,11 +11,10 @@ class DataPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final stmProvider = Provider.of<STM32Provider>(context);
 
-    Map<String, dynamic> parsedData2 = {};
-
+    Map<String, dynamic> parsedSTM2 = {};
     try {
-      parsedData2 = jsonDecode(stmProvider.latestDataSTM2);
-    } catch (e) {}
+      parsedSTM2 = jsonDecode(stmProvider.latestDataSTM2);
+    } catch (_) {}
 
     final emgData = [
       {
@@ -42,7 +40,8 @@ class DataPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.blue.shade50,
       appBar: AppBar(
-        title: const Text('STM32 Real-time Viewer'),
+        automaticallyImplyLeading: false,
+        title: const Text('Home Page'),
         centerTitle: true,
         backgroundColor: Colors.blue.shade100,
         actions: [
@@ -60,7 +59,7 @@ class DataPage extends StatelessWidget {
       ),
       body: Row(
         children: [
-          // Left Half - EMG Table
+          // Left Half - EMG Table (STM1)
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
@@ -68,11 +67,11 @@ class DataPage extends StatelessWidget {
             ),
           ),
 
-          // Right Half - STM32 Data Table
+          // Right Half - STM2 Data Table
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(8.0),
-              child: buildJsonTable(parsedData2),
+              child: buildJsonTable(parsedSTM2),
             ),
           ),
         ],
