@@ -25,22 +25,24 @@ class _LoginScreenState extends State<LoginScreen> {
   final db = DatabaseHelper();
   //Login Method
   //We will take the value of text fields using controllers in order to verify whether details are correct or not
-  login() async {
-    Users? usrDetails = await db.getUser(usrName.text);
-    var res = await db
-        .authenticate(Users(usrName: usrName.text, password: password.text));
-    if (res == true) {
-      //If result is correct then go to profile or home
-      if (!mounted) return;
+  void login() {
+    const String validUsername = 'admin';
+    const String validPassword = 'admin';
+
+    if (usrName.text == validUsername && password.text == validPassword) {
+      // الدخول ناجح
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => DataPage()));
+        context,
+        MaterialPageRoute(builder: (context) => const DataPage()),
+      );
     } else {
-      //Otherwise show the error message
+      // كلمة المرور أو اسم المستخدم خطأ
       setState(() {
         isLoginTrue = true;
       });
     }
   }
+
 //username==>Sm_Current
 //passsword==>Sm_Current
 

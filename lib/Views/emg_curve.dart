@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_sqlite_auth_app/provider/stm1_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_sqlite_auth_app/provider/stm32_provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 class EmgCurve extends StatelessWidget {
@@ -86,7 +86,7 @@ class EmgCurve extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final stmProvider = Provider.of<STM32Provider>(context);
+    final stmProvider = Provider.of<STM1Provider>(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -96,8 +96,6 @@ class EmgCurve extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _buildChart(
-                stmProvider.signalHistory, Colors.purple, "Signal STM2"),
             _buildChart(stmProvider.emg1History, Colors.red, "EMG 1"),
             _buildChart(stmProvider.emg2History, Colors.green, "EMG 2"),
             _buildChart(stmProvider.emg3History, Colors.orange, "EMG 3"),

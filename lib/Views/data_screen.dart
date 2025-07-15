@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_sqlite_auth_app/Views/emg_curve.dart';
 import 'package:flutter_sqlite_auth_app/Views/signal_curve.dart';
-import 'package:flutter_sqlite_auth_app/provider/stm32_provider.dart';
+import 'package:flutter_sqlite_auth_app/provider/stm1_provider.dart';
+import 'package:flutter_sqlite_auth_app/provider/stm2_provider.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
 
@@ -9,37 +11,45 @@ class DataPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final stmProvider = Provider.of<STM32Provider>(context);
+    final stm1 = Provider.of<STM1Provider>(context);
+    final stm2 = Provider.of<STM2Provider>(context);
 
     Map<String, dynamic> parsedSTM2 = {};
     try {
-      parsedSTM2 = jsonDecode(stmProvider.latestDataSTM2);
+      parsedSTM2 = jsonDecode(stm2.latestData);
     } catch (_) {}
 
     final emgData = [
       {
         "Parameter": "EMG 1",
-        "Value": stmProvider.emg1History.isEmpty
-            ? "0"
-            : stmProvider.emg1History.last.toString()
+        "Value":
+            stm1.emg1History.isEmpty ? "0" : stm1.emg1History.last.toString()
       },
       {
         "Parameter": "EMG 2",
-        "Value": stmProvider.emg2History.isEmpty
-            ? "0"
-            : stmProvider.emg2History.last.toString()
+        "Value":
+            stm1.emg2History.isEmpty ? "0" : stm1.emg2History.last.toString()
       },
       {
         "Parameter": "EMG 3",
-        "Value": stmProvider.emg3History.isEmpty
-            ? "0"
-            : stmProvider.emg3History.last.toString()
+        "Value":
+            stm1.emg3History.isEmpty ? "0" : stm1.emg3History.last.toString()
       },
     ];
 
     return Scaffold(
       backgroundColor: Colors.blue.shade50,
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.show_chart),
+          tooltip: 'Show Signal Curve',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => SignalCurve()),
+            );
+          },
+        ),
         automaticallyImplyLeading: false,
         title: const Text('Home Page'),
         centerTitle: true,
@@ -47,11 +57,11 @@ class DataPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.show_chart),
-            tooltip: 'Show Signal Curve',
+            tooltip: 'Show EMG Curve',
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const SignalPage()),
+                MaterialPageRoute(builder: (_) => EmgCurve()),
               );
             },
           ),
@@ -89,7 +99,7 @@ class DataPage extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(8.0),
             child: const Text(
-              "EMG Latest Values",
+              "EMG Latest Values (STM1)",
               style:
                   TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
@@ -116,7 +126,7 @@ class DataPage extends StatelessWidget {
     );
   }
 
-  Widget buildJsonTable(Map<String, dynamic> stmsData) {
+  Widget buildJsonTable(Map<String, dynamic> stm2Data) {
     return Card(
       elevation: 4,
       child: Column(
@@ -126,22 +136,22 @@ class DataPage extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(8.0),
             child: const Text(
-              "STM32 JSON Data",
+              "STM2 JSON Data (Signal & Features)",
               style:
                   TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
           ),
           Expanded(
-            child: stmsData.isEmpty
-                ? const Center(child: Text("Waiting for STM32 Data..."))
+            child: stm2Data.isEmpty
+                ? const Center(child: Text("Waiting for STM2 Data..."))
                 : SingleChildScrollView(
                     child: DataTable(
                       columns: const [
                         DataColumn(label: Text('Parameter')),
                         DataColumn(label: Text('Value')),
                       ],
-                      rows: stmsData.entries
+                      rows: stm2Data.entries
                           .map(
                             (entry) => DataRow(
                               cells: [

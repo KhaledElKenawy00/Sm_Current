@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_sqlite_auth_app/provider/stm32_provider.dart';
+import 'package:flutter_sqlite_auth_app/provider/stm2_provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 
-class SignalPage extends StatelessWidget {
-  const SignalPage({super.key});
-
+class SignalCurve extends StatelessWidget {
   static const double displayWindow = 100;
 
   Widget _buildChart(List<double> data, Color color, String label) {
@@ -88,21 +86,18 @@ class SignalPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final stmProvider = Provider.of<STM32Provider>(context);
+    final stmProvider = Provider.of<STM2Provider>(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Signal & EMG Curves'),
+        title: const Text('Signal'),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
             _buildChart(
-                stmProvider.signalHistorySTM2, Colors.purple, "Signal STM2"),
-            _buildChart(stmProvider.emg1History, Colors.red, "EMG 1"),
-            _buildChart(stmProvider.emg2History, Colors.green, "EMG 2"),
-            _buildChart(stmProvider.emg3History, Colors.orange, "EMG 3"),
+                stmProvider.signalHistory, Colors.purple, "Signal STM2"),
           ],
         ),
       ),
